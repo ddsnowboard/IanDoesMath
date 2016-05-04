@@ -3,16 +3,17 @@
     <link type="text/css" href="style.css" />
     <script src="https://code.jquery.com/jquery-2.2.3.min.js" integrity="sha256-a23g1Nt4dtEYOj7bR+vTu7+T8VP13humZFBJNIYoEJo=" crossorigin="anonymous"></script>
     <script src="jcanvas.min.js"></script>
+    <script src="http://cdnjs.cloudflare.com/ajax/libs/mathjs/3.2.1/math.min.js"></script>
     <script src="main.js"></script>
 </head>
-<canvas id="graph" width="500" height="500">
+<canvas id="graph" width="300" height="300">
 </canvas>
 <br />
 f(x) = <input id="mathBox" />
 <br />
-minimum x: <input id="minX">
+minimum x: <input id="minX" value="-10">
 <br />
-maximum x: <input id="maxX">
+maximum x: <input id="maxX" value="10">
 <br />
 <input type="button" id="go" value="Graph" />
 </html>
