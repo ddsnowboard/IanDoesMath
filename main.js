@@ -1,5 +1,10 @@
 "use strict";
 
+var SIMPSON = "simpson";
+var LEFT = "left";
+var RIGHT = "right";
+var CENTER = "center";
+var TRAPEZOID = "trapezoid";
 
 function Coord(x, y)
 {
@@ -11,11 +16,104 @@ function Pixel(x, y)
     this.x = x;
     this.y = y;
 }
+function Integration(f, coordX1, coordX2, type, slices)
+{
+    var THICKNESS = 1;
+    var COLOR = "#f00";
+    // An Integration is a list of pairs of Coords to graph, pretty much.
+    this.coords = [];
+    this.f = f;
+    this.coordX1 = coordX1;
+    this.coordX2 = coordX2;
+    this.coordSliceWidth = (this.coordX2 - this.coordX1) / slices;
+    this.type = type;
+    this.slices = slices;
+    this.total = 0;
+
+    this.draw = function(drawFunction)
+    {
+        /*
+         * @param drawFunction A function with the signature function(coord1, coord2, thickness, color) that draws a line of thickness thickness in color from coord1 to coord2
+         */
+        for(var i = 0; i < this.coords.length; i++)
+        {
+            drawFunction(this.coords[i][0], this.coords[i][1], THICKNESS, COLOR);
+        }
+    }
+    if(type == LEFT)
+    {
+        for(var x = this.coordX1; x <= this.coordX2; x += this.coordSliceWidth)
+        {
+            var result = this.f(x);
+            this.coords.push([new Coord(x, 0), new Coord(x, result)]);
+            this.coords.push([new Coord(x, result), new Coord(x + this.coordSliceWidth, result)]);
+            this.coords.push([new Coord(x + this.coordSliceWidth, result), new Coord(x + this.coordSliceWidth, 0)]);
+            this.total += result * this.coordSliceWidth;
+        }
+    }
+    else if(type == RIGHT)
+    {
+        for(var x = this.coordX1; x + this.coordSliceWidth <= this.coordX2; x += this.coordSliceWidth)
+        {
+            var result = this.f(x + this.coordSliceWidth);
+            this.coords.push([new Coord(x, 0), new Coord(x, result)]);
+            this.coords.push([new Coord(x, result), new Coord(x + this.coordSliceWidth, result)]);
+            this.coords.push([new Coord(x + this.coordSliceWidth, result), new Coord(x + this.coordSliceWidth, 0)]);
+            this.total += result * this.coordSliceWidth;
+        }
+    }
+    else if(type == CENTER)
+    {
+        for(var x = this.coordX1; x + this.coordSliceWidth <= this.coordX2; x += this.coordSliceWidth)
+        {
+            var result = this.f(x + .5 * this.coordSliceWidth);
+            this.coords.push([new Coord(x, 0), new Coord(x, result)]);
+            this.coords.push([new Coord(x, result), new Coord(x + this.coordSliceWidth, result)]);
+            this.coords.push([new Coord(x + this.coordSliceWidth, result), new Coord(x + this.coordSliceWidth, 0)]);
+            this.total += result * this.coordSliceWidth;
+        }
+    }
+    else if(type == TRAPEZOID)
+    {
+        for(var x = this.coordX1; x + this.coordSliceWidth <= this.coordX2; x += this.coordSliceWidth)
+        {
+            var resultLeft = this.f(x);
+            var resultRight = this.f(x + this.coordSliceWidth);
+            this.coords.push([new Coord(x, 0), new Coord(x, resultLeft)]);
+            this.coords.push([new Coord(x, resultLeft), new Coord(x + this.coordSliceWidth, resultRight)]);
+            this.coords.push([new Coord(x + this.coordSliceWidth, resultRight), new Coord(x + this.coordSliceWidth, 0)]);
+            this.total += ((resultLeft + resultRight) / 2) * this.coordSliceWidth;
+        }
+    }
+    else if(type == SIMPSON)
+    {
+        var RESOLUTION = 100;
+        var p = function(f, a, b, x)
+        {
+            var m = (a + b) / 2;
+            return f(a)*(((x - m)*(x - b))/(a - m)*(a - b)) + f(m)*(((x - a)*(x - b))/(m - a)*(m - b)) + f(b)*(((x - a)*(x - m))/(b - a)*(b - m)) 
+        };
+
+        for(var x = this.coordX1; x + this.coordSliceWidth <= this.coordX2; x += this.coordSliceWidth)
+        {
+            var b = x + this.coordSliceWidth;
+            this.coords.push([new Coord(x, 0), new Coord(x, p(this.f, x, b, x))]);
+            this.coords.push([new Coord(b, 0), new Coord(b, p(this.f, x, b, b))]);
+            var coordWidth = (b - x) / RESOLUTION;
+            for(var j = x; j + coordWidth <= b; j += coordWidth)
+            {
+                this.coords.push([new Coord(j, p(this.f, x, b, j)), new Coord(j + coordWidth, p(this.f, x, b, j + coordWidth))]);
+            }
+            this.total += ((b - x) / 6) * (this.f(x) + 4 * f((x + b) / 2) + f(b));
+        }
+    }
+}
 function Graph(jGraph)
 {
     this.jGraph = jGraph;
     this.pHeight = jGraph.height();
     this.pWidth = jGraph.width();
+    this.method = LEFT;
     this.draw = function(f, coordMinX, coordMaxX, coordMinY, coordMaxY)
     {
         this.jGraph.drawRect({
@@ -60,6 +158,7 @@ function Graph(jGraph)
 
         if(f)
         {
+            this.f = f;
             var lastCoord = null;
             for(var i = this.coordMinX; i < this.coordMaxX; i += xRange / RESOLUTION)
             {
@@ -67,6 +166,9 @@ function Graph(jGraph)
                 this.drawLine(lastCoord, currCoord, 1, LINE_COLOR);
                 lastCoord = currCoord;
             }
+            var integration = new Integration(this.f, coordMinX, coordMaxX, this.method, 30);
+            integration.draw(this.drawLine.bind(this));
+            $("#output").html("The result is " + integration.total);
         }
     }
     /*
@@ -126,5 +228,30 @@ $(document).ready(function()
                         var minY = -10;
                         var maxY = 10;
                         canvas.draw(function(x){return eqn.eval({x: x})}, minX, maxX, minY, maxY);
+                    });
+            $("#right").click(function()
+                    {
+                        canvas.method = RIGHT;
+                        $("#go").click();
+                    });
+            $("#left").click(function()
+                    {
+                        canvas.method = LEFT;
+                        $("#go").click();
+                    });
+            $("#center").click(function()
+                    {
+                        canvas.method = CENTER;
+                        $("#go").click();
+                    });
+            $("#simpson").click(function()
+                    {
+                        canvas.method = SIMPSON;
+                        $("#go").click();
+                    });
+            $("#trapezoid").click(function()
+                    {
+                        canvas.method = TRAPEZOID;
+                        $("#go").click();
                     });
         });
