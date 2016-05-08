@@ -91,7 +91,9 @@ function Integration(f, coordX1, coordX2, type, slices)
         var p = function(f, a, b, x)
         {
             var m = (a + b) / 2;
-            return f(a)*(((x - m)*(x - b))/(a - m)*(a - b)) + f(m)*(((x - a)*(x - b))/(m - a)*(m - b)) + f(b)*(((x - a)*(x - m))/(b - a)*(b - m)) 
+            return f(a) * (((x - m) * (x - b)) / ((a - m) * (a - b))) + 
+                f(m) * (((x - a) * (x - b)) / ((m - a) * (m - b))) + 
+                f(b) * (((x - a) * (x - m)) / ((b - a) * (b - m)));
         };
 
         for(var x = this.coordX1; x + this.coordSliceWidth <= this.coordX2; x += this.coordSliceWidth)
