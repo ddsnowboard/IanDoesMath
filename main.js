@@ -16,6 +16,47 @@ function Pixel(x, y)
     this.x = x;
     this.y = y;
 }
+
+function getYCoords(func, coordMinX, coordMaxX)
+{
+    /*
+     * This function returns the necessary y values to see the inflection points of the
+     * graph of func
+     */
+    var DEFAULT = [-10, 10];
+    var WIDTH = .001;
+    function ddx(func, x)
+    {
+        return (func(x + WIDTH) - func(x)) / WIDTH;
+    }
+    var TOLERANCE = 1.0e-1;
+    var lowest = null;
+    var highest = null;
+    for(var i = coordMinX; i < coordMaxX; i += WIDTH)
+    {
+        var m = ddx(func, i);
+        var y = func(i);
+        if(m < TOLERANCE)
+        {
+            if(highest == null || y > highest)
+                highest = y;
+            else if(lowest == null || y < lowest)
+                lowest = y;
+        }
+    }
+    if(highest == null || lowest == null)
+    {
+        if(highest)
+            return [highest - 10, highest + 10];
+        else if(lowest)
+            return [lowest - 10, lowest + 10];
+        else
+            return DEFAULT;
+    }
+    var diff = highest - lowest;
+    return [lowest - .1 * diff, highest + .1 * diff];
+}
+
 function Integration(f, coordX1, coordX2, type, slices)
 {
     var THICKNESS = 1;
@@ -225,11 +266,12 @@ $(document).ready(function()
                         var maxX = parseInt($("#maxX").val(), 10);
                         var minX = parseInt($("#minX").val(), 10);
                         var eqn = $("#mathBox").val() == "" ? null : math.compile($("#mathBox").val());
-
+                        var func = function(x){return eqn.eval({x: x})} ;
                         // I need to put something here at some point.
-                        var minY = -10;
-                        var maxY = 10;
-                        canvas.draw(function(x){return eqn.eval({x: x})}, minX, maxX, minY, maxY);
+                        var yCoords = getYCoords(func, minX, maxX);
+                        var minY = yCoords[0];
+                        var maxY = yCoords[1];
+                        canvas.draw(func, minX, maxX, minY, maxY);
                     });
             $("#right").click(function()
                     {
