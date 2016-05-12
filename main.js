@@ -6,6 +6,12 @@ var RIGHT = "right";
 var CENTER = "center";
 var TRAPEZOID = "trapezoid";
 
+var THICKNESS = 1;
+var COLOR = "#f00";
+
+var integrations = {};
+var worker;
+
 function Coord(x, y)
 {
     this.x = x;
@@ -57,10 +63,15 @@ function getYCoords(func, coordMinX, coordMaxX)
     return [lowest - .1 * diff, highest + .1 * diff];
 }
 
+function drawCoordSet(coords, drawFunction, thickness, color)
+{
+    for(var i = 0; i < coords.length; i++)
+    {
+        drawFunction(coords[i][0], coords[i][1], thickness, color);
+    }
+}
 function Integration(f, coordX1, coordX2, type, slices)
 {
-    var THICKNESS = 1;
-    var COLOR = "#f00";
     // An Integration is a list of pairs of Coords to graph, pretty much.
     this.coords = [];
     this.f = f;
@@ -76,10 +87,7 @@ function Integration(f, coordX1, coordX2, type, slices)
         /*
          * @param drawFunction A function with the signature function(coord1, coord2, thickness, color) that draws a line of thickness thickness in color from coord1 to coord2
          */
-        for(var i = 0; i < this.coords.length; i++)
-        {
-            drawFunction(this.coords[i][0], this.coords[i][1], THICKNESS, COLOR);
-        }
+        drawCoordSet(this.coords, drawFunction, THICKNESS, COLOR);
     }
     if(type == LEFT)
     {
@@ -157,8 +165,7 @@ function Graph(jGraph)
     this.pHeight = jGraph.height();
     this.pWidth = jGraph.width();
     this.method = LEFT;
-    this.draw = function(f, coordMinX, coordMaxX, coordMinY, coordMaxY)
-    {
+    this.clear = function(){
         this.jGraph.drawRect({
             fillStyle:"#fff",
             x: 0, y: 0,
@@ -166,6 +173,12 @@ function Graph(jGraph)
             width: this.pWidth,
             fromCenter: false,
         });
+    };
+    this.draw = function(f, coordMinX, coordMaxX, coordMinY, coordMaxY, slices)
+    {
+        if(worker)
+            worker.terminate();
+        this.clear();
         // I guess this should be good...
         var RESOLUTION = 1000;
         var LINE_COLOR = "#000";
@@ -209,9 +222,14 @@ function Graph(jGraph)
                 this.drawLine(lastCoord, currCoord, 1, LINE_COLOR);
                 lastCoord = currCoord;
             }
-            var integration = new Integration(this.f, coordMinX, coordMaxX, this.method, 30);
+            var integration = new Integration(this.f, coordMinX, coordMaxX, this.method, slices);
             integration.draw(this.drawLine.bind(this));
             $("#output").html("The result is " + integration.total);
+            worker = new Worker("main.js");
+            worker.onmessage = function(e) {
+                integrations[e.data[0]] = e.data[1];
+            };
+            worker.postMessage(JSON.stringify({func: $("#mathBox").val(), coordX1: coordMinX, coordX2: coordMaxX, method: this.method}));
         }
     }
     /*
@@ -258,44 +276,77 @@ function Graph(jGraph)
         return new Pixel(pOutX, pOutY);
     }
 }
-$(document).ready(function()
+if(this.document){
+    $(document).ready(function()
+            {
+                var canvas = new Graph($("#graph"));
+                $("#go").click(function() 
+                        {
+                            integrations = {};
+                            var maxX = parseInt($("#maxX").val(), 10);
+                            var minX = parseInt($("#minX").val(), 10);
+                            var eqn = $("#mathBox").val() == "" ? null : math.compile($("#mathBox").val());
+                            var func = function(x){return eqn.eval({x: x})} ;
+                            // I need to put something here at some point.
+                            var yCoords = getYCoords(func, minX, maxX);
+                            var minY = yCoords[0];
+                            var maxY = yCoords[1];
+                            var slices = parseInt($("#slider").val());
+                            canvas.draw(func, minX, maxX, minY, maxY, slices);
+                        });
+                $("#right").click(function()
+                        {
+                            canvas.method = RIGHT;
+                            $("#go").click();
+                        });
+                $("#left").click(function()
+                        {
+                            canvas.method = LEFT;
+                            $("#go").click();
+                        });
+                $("#center").click(function()
+                        {
+                            canvas.method = CENTER;
+                            $("#go").click();
+                        });
+                $("#simpson").click(function()
+                        {
+                            canvas.method = SIMPSON;
+                            $("#go").click();
+                        });
+                $("#trapezoid").click(function()
+                        {
+                            canvas.method = TRAPEZOID;
+                            $("#go").click();
+                        });
+                $("#slider").on("input", function() {
+                    canvas.clear();
+                    canvas.draw(null, canvas.coordMinX, canvas.coordMaxX, canvas.coordMinY, canvas.coordMaxY, $(this).val());
+                    var coords;
+                    if(integrations[$(this).val()])
+                        drawCoordSet(integrations[$(this).val()], canvas.drawLine.bind(canvas), THICKNESS, COLOR);
+                    else
+                        $("#go").click();
+                });
+            });
+
+}
+else{
+    onmessage = function(e)
+    {
+        importScripts("http://cdnjs.cloudflare.com/ajax/libs/mathjs/3.2.1/math.min.js");
+        var jsonObj = JSON.parse(e.data);
+        var func = function(x) {return math.compile(jsonObj.func).eval({x: x});};
+        var coordX1 = jsonObj.coordX1;
+        var coordX2 = jsonObj.coordX2;
+        var method = jsonObj.method;
+        for(var i = 5; i <= 100; i += 5)
         {
-            var canvas = new Graph($("#graph"));
-            $("#go").click(function() 
-                    {
-                        var maxX = parseInt($("#maxX").val(), 10);
-                        var minX = parseInt($("#minX").val(), 10);
-                        var eqn = $("#mathBox").val() == "" ? null : math.compile($("#mathBox").val());
-                        var func = function(x){return eqn.eval({x: x})} ;
-                        // I need to put something here at some point.
-                        var yCoords = getYCoords(func, minX, maxX);
-                        var minY = yCoords[0];
-                        var maxY = yCoords[1];
-                        canvas.draw(func, minX, maxX, minY, maxY);
-                    });
-            $("#right").click(function()
-                    {
-                        canvas.method = RIGHT;
-                        $("#go").click();
-                    });
-            $("#left").click(function()
-                    {
-                        canvas.method = LEFT;
-                        $("#go").click();
-                    });
-            $("#center").click(function()
-                    {
-                        canvas.method = CENTER;
-                        $("#go").click();
-                    });
-            $("#simpson").click(function()
-                    {
-                        canvas.method = SIMPSON;
-                        $("#go").click();
-                    });
-            $("#trapezoid").click(function()
-                    {
-                        canvas.method = TRAPEZOID;
-                        $("#go").click();
-                    });
-        });
+            var integration = new Integration(func, coordX1, coordX2, method, i);
+            console.log("Ding!");
+            postMessage([i, integration.coords]);
+            // postMessage([i, integration]);
+        }
+        close();
+    }
+}
