@@ -1,28 +1,48 @@
+<!doctype html>
 <html>
 <head>
-    <link type="text/css" href="style.css" />
-    <script src="https://code.jquery.com/jquery-2.2.3.min.js" integrity="sha256-a23g1Nt4dtEYOj7bR+vTu7+T8VP13humZFBJNIYoEJo=" crossorigin="anonymous"></script>
+<script src="https://code.jquery.com/jquery-2.2.3.min.js" integrity="sha256-a23g1Nt4dtEYOj7bR+vTu7+T8VP13humZFBJNIYoEJo=" crossorigin="anonymous"></script>
     <script src="jcanvas.min.js"></script>
     <script src="http://cdnjs.cloudflare.com/ajax/libs/mathjs/3.2.1/math.min.js"></script>
     <script src="main.js"></script>
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+<link href="css/style.css" rel="stylesheet">
+<meta charset="UTF-8">
+<title>Riemann Sums</title>
 </head>
-<canvas id="graph" width="500" height="500">
-</canvas>
-<br />
-f(x) = <input id="mathBox" />
-<br />
-minimum x: <input id="minX" value="-10">
-<br />
-maximum x: <input id="maxX" value="10">
-<br />
-<input type="button" id="go" value="Graph" />
-<br />
-<input type="button" id="simpson" value="Simpson's Rule" />
-<input type="button" id="right" value="Right Sum" />
-<input type="button" id="left" value="Left Sum" />
-<input type="button" id="center" value="Center Sum" />
-<input type="button" id="trapezoid" value="Trapezoid Sum" />
-<br />
-<input type="range" min="5" max="100" step="5" id="slider" />
-<p id="output"></p>
+
+<body>
+<div id="mainwrapper">
+	<div id="main-content">
+        <div id="tri-top" class="tri"></div>	
+        <div id="bar-top" class="title-bar"></div>
+        <canvas id="graph"></canvas>
+        <div id="tri-bot" class="tri"></div>
+        <div id="bar-bot" class="title-bar">
+            <span id="fx">f(x)=</span>
+            <input type="text" id="mathBox" class="function">
+            <button class="button button-tiny" id="go" value="Graph">Go</button>
+        </div>
+      <div id="subentry">
+            <div id="minimax">
+            <span class="minmax">Min X:<input id="minX" value="-10"></span>
+            <br>
+            <span class="minmax">Max X:<input id="maxX" value="10"></span>
+            </div>
+            <div id="slider-box">
+            Number of Rectangles
+            <input type="range" min="5" max="100" step="5" id="slider"/>
+            <span id="min">5</span><span id="max">100</span>
+            </div>
+        </div>
+    </div>
+    <div id="sidenav">
+        <input type="button" class="option" id="simpson" value="Simpson's Rule"/>
+        <input type="button" class="option" id="right" value="Right Sum"/>
+        <input type="button" class="option" id="left" value="Left Sum"/>
+        <input type="button" class="option" id="center" value="Center Sum"/>
+        <input type="button" class="option" id="trapezoid" value="Trapezoid Sum"/>
+    </div>
+</div>
+</body>
 </html>
