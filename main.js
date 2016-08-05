@@ -276,17 +276,41 @@ function Graph(jGraph)
         return new Pixel(pOutX, pOutY);
     }
 }
+function handleResize(canvas)
+{
+    console.log({'canvas html height': canvas.jGraph.height(), 'canvas html width': canvas.jGraph.width(), 'canvas height': canvas.jGraph[0].height, 'canvas width': canvas.jGraph[0].width});
+    canvas.jGraph[0].height = canvas.jGraph.height();
+    canvas.jGraph[0].width = canvas.jGraph.width();
+    var out = new Graph(canvas.jGraph);
+    out.method = canvas.method;
+    return out;
+}
 if(this.document){
     $(document).ready(function()
             {
                 var canvas = new Graph($("#graph"));
+                canvas = handleResize(canvas);
+                window.onresize = function() { canvas = handleResize(canvas); $("#go").click();};
                 $("#go").click(function() 
                         {
                             integrations = {};
                             var maxX = parseInt($("#maxX").val(), 10);
                             var minX = parseInt($("#minX").val(), 10);
                             var eqn = $("#mathBox").val() == "" ? null : math.compile($("#mathBox").val());
-                            var func = function(x){return eqn.eval({x: x})} ;
+                            try 
+                            {
+                                var func = function(x){return eqn.eval({x: x})};
+                            }
+                            catch (err)
+                            {
+                                if(err instanceof TypeError)
+                                {
+                                }
+                                else
+                                {
+                                    throw err;
+                                }
+                            }
                             // I need to put something here at some point.
                             var yCoords = getYCoords(func, minX, maxX);
                             var minY = yCoords[0];
@@ -294,40 +318,40 @@ if(this.document){
                             var slices = parseInt($("#slider").val());
                             canvas.draw(func, minX, maxX, minY, maxY, slices);
                         });
-                $("#right").click(function()
-                        {
-                            canvas.method = RIGHT;
-                            $("#go").click();
-                        });
-                $("#left").click(function()
-                        {
-                            canvas.method = LEFT;
-                            $("#go").click();
-                        });
-                $("#center").click(function()
-                        {
-                            canvas.method = CENTER;
-                            $("#go").click();
-                        });
-                $("#simpson").click(function()
-                        {
-                            canvas.method = SIMPSON;
-                            $("#go").click();
-                        });
-                $("#trapezoid").click(function()
-                        {
-                            canvas.method = TRAPEZOID;
-                            $("#go").click();
-                        });
-                $("#slider").on("input", function() {
-                    canvas.clear();
-                    canvas.draw(null, canvas.coordMinX, canvas.coordMaxX, canvas.coordMinY, canvas.coordMaxY, $(this).val());
-                    var coords;
-                    if(integrations[$(this).val()])
-                        drawCoordSet(integrations[$(this).val()], canvas.drawLine.bind(canvas), THICKNESS, COLOR);
-                    else
-                        $("#go").click();
-                });
+                        $("#right").click(function()
+                                {
+                                    canvas.method = RIGHT;
+                                    $("#go").click();
+                                });
+                                $("#left").click(function()
+                                        {
+                                            canvas.method = LEFT;
+                                            $("#go").click();
+                                        });
+                                        $("#center").click(function()
+                                                {
+                                                    canvas.method = CENTER;
+                                                    $("#go").click();
+                                                });
+                                                $("#simpson").click(function()
+                                                        {
+                                                            canvas.method = SIMPSON;
+                                                            $("#go").click();
+                                                        });
+                                                        $("#trapezoid").click(function()
+                                                                {
+                                                                    canvas.method = TRAPEZOID;
+                                                                    $("#go").click();
+                                                                });
+                                                                $("#slider").on("input", function() {
+                                                                    canvas.clear();
+                                                                    canvas.draw(null, canvas.coordMinX, canvas.coordMaxX, canvas.coordMinY, canvas.coordMaxY, $(this).val());
+                                                                    var coords;
+                                                                    if(integrations[$(this).val()])
+                                                                        drawCoordSet(integrations[$(this).val()], canvas.drawLine.bind(canvas), THICKNESS, COLOR);
+                                                                    else
+                                                                        $("#go").click();
+                                                                });
             });
 
 }
