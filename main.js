@@ -334,7 +334,7 @@ if(this.document){
 else{
     onmessage = function(e)
     {
-        importScripts("http://cdnjs.cloudflare.com/ajax/libs/mathjs/3.2.1/math.min.js");
+        importScripts("https://cdnjs.cloudflare.com/ajax/libs/mathjs/3.2.1/math.min.js");
         var jsonObj = JSON.parse(e.data);
         var func = function(x) {return math.compile(jsonObj.func).eval({x: x});};
         var coordX1 = jsonObj.coordX1;
